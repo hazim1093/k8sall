@@ -1,0 +1,28 @@
+#!/bin/bash
+
+confirm() {
+    # call with a prompt string or use a default
+    read -r -p "${1:-Are you sure? [y/N]} " response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            true
+            ;;
+        *)
+            false
+            ;;
+    esac
+}
+
+currentContext=$(kubectl config current-context)
+contexts=$(kubectl config get-contexts | awk '{print $1}' | grep -v -e "CURRENT" -e "*" )
+
+for context in ${contexts};
+do
+    printf "Going to run: \e[32m $@  \e[0m in \033[31m ${context} \e[0m \n"
+    confirm && \
+        kubectx ${context} && \
+        $@
+done
+
+# Revert context
+kubectl config use-context ${currentContext}
